@@ -1,0 +1,1175 @@
+% Manuscript: Documentos científicos em pdf e docx a partir de \
+  arquivos-texto com Pandoc e LaTeX
+% Nelson Luís Dias\
+  Departamento de Engenharia Ambiental,\
+  Universidade Federal do Paraná. email: `nldias@ufpr.br`\
+  Luzia Schalkoski Dias\
+  PUC/PR. email: `luzia.schal@gmail.com`
+% 2015-06-08
+<!-- language: brazil -->
+<!-- bibliography: manuscript-pt.bib -->
+<!-- citation-style: abnt.csl -->
+
+
+> **Resumo**
+
+> Nós apresentamos um novo pré-processador para Pandoc/Markdown,
+> denominado Manuscript.  Manuscript é escrito em Python, e adiciona
+> referências cruzadas no estilo LaTeX, '`\label`'/'`\@ref`', à
+> linguagem de Marcação Markdown com extensões Pandoc.  Utilizando
+> Manuscript/Pandoc/Markdown (e LaTeX em segundo plano), é possível
+> sistematizar a produção de documentos técnicos e científicos
+> relativamente *simples*, tais como trabalhos escolares, relatórios
+> técnicos e artigos científicos. Os detalhes do processo de produção
+> desses tipos de documento, que utiliza intensamente tabelas,
+> figuras, equações e referências bibliográficas e que as atualiza
+> constantemente, são discutidos. Arquivos de saída '`pdf`' e '`docx`'
+> são gerados automaticamente. Algumas vantagens são maior velocidade
+> e eliminação de erros e inconsistências nos arquivos de saída.
+
+
+> **Abstract** 
+
+> Manuscript, a new Pandoc/Markdown preprocessor is introduced.  It is
+> written in Python and adds LaTeX-style cross-references
+> ('`\label`'/'`\ref`') to Markdown with Pandoc extensions.  Using
+> Manuscript/Pandoc/Markdown (with LaTeX in the background), it is
+> possible to write technical documents, such as school papers,
+> technical reports and scientific papers, in a systematic way.  The
+> details of such a process, which makes intense use of tables,
+> figures, equations and bibliographic references, and which
+> constantly requires their updating, are discussed.  '`pdf`' and
+> '`docx`' output files are automatically generated. Some advantages
+> are faster turnout time and more consistent and error-free output
+> files.
+
+# Introdução \label{sec:intro}
+
+Escrever um artigo científico ou um relatório técnico é muito
+diferente de escrever uma redação, ou um ensaio.
+
+Redações e ensaios são escritos em torno de um tema central, sobre o
+qual o autor argumenta, defendendo suas idéias, mantendo pontos de
+vista que muitas vezes são subjetivos, e usando para os seus
+argumentos informações sem a necessidade de documentá-las muito
+detalhadamente.  Nessas formas textuais, são a capacidade
+argumentativa, de síntese, e não raro o estilo, que importam na
+produção de um bom texto.
+
+Já artigos científicos e documentos técnicos são escritos de forma
+totalmente diferente. Eles são criados em torno de um conjunto de
+informações *objetivas*, que consistem em: referências bibliográficas,
+dados tabelados, figuras (que podem ser fotografias, gráficos, e
+diagramas), e equações.  A redação é mais penosa, e a criação desses
+documentos tipicamente demora muitas semanas, ou meses.
+
+À medida que a criação do documento prossegue, os seus elementos costumam ser
+constantemente modificados: algumas referências bibliográficas são retiradas,
+outras são adicionadas; figuras e tabelas são refeitas; equações são
+incluídas ou eliminadas.
+
+A re-formatação manual do documento a cada modificação pode ser muito
+trabalhosa. Uma nova referência precisa ser formatada de acordo com o
+padrão adotado (no Brasil, muito comumente segundo a norma NBR6023
+[@abnt:referencias]; a inserção de uma nova equação "no meio" do texto
+acarreta a renumeração das equações de todo o texto; etc..
+
+Mesmo assim, talvez a maioria dos autores de documentos
+técnico-científicos utilize processadores de texto (exemplos dos quais
+são LibreOffice (<https://www.libreoffice.org>), e Microsoft Word
+(<http://office.microsoft.com/en-001/word/>)) para criá-los
+manualmente.
+
+Uma abordagem muito diferente é o uso de LaTeX [@lamport1994].  Ele
+permite a automação da maioria das tarefas mencionadas acima, tais
+como a renumeração das equações (note que isso também é possível em
+processadores de texto, mas acaba requerendo o aprendizado de
+procedimentos mais "avançados"). Os resultados, em termos de qualidade
+tipográfica e de controle sobre o conteúdo tipografado são
+excelentes. Além do livro de Lamport, numerosas fontes de informação
+sobre LaTeX estão disponíveis na Internet.  Veja (apenas a título de
+exemplo): <http://www.ctan.org>,
+<http://tobi.oetiker.ch/lshort/lshort.pdf>,
+<https://www.tug.org/twg/mactex/tutorials/ltxprimer-1.0.pdf>.
+
+No entanto, LaTeX é uma linguagem de marcação (*markup language*) relativamente
+"pesada", que precisa ser aprendida (sua sintaxe precisa ser dominada), o que
+afasta muitos autores.
+
+Este trabalho apresenta um conjunto de ferramentas computacionais livremente
+disponíveis, de código aberto, que permitem automatizar o processo de criação de
+documentos técnico-científicos. A maioria dessas ferramentas já existe, e nós
+adicionamos mais uma, denominada Manuscript, que implementa de forma simples
+referências cruzadas no estilo LaTeX (pares de '`\label`'/'`\ref`') à linguagem de
+marcação leve Markdown (<http://daringfireball.net/projects/markdown/>), com
+extensões em Pandoc (<http://pandoc.org>).
+
+A combinação de Markdown/Pandoc com Manuscript representa um meio-termo
+entre o uso de processadores de texto e o uso de LaTeX. Exceto pelas
+equações, a sintaxe de LaTeX não precisa ser aprendida. Muitas das
+vantagens de LaTeX (rapidez de produção e modificação do texto;
+referências cruzadas, formatação automática de referências
+bibliográficas) são mantidas; e o documento final é gerado tanto como
+um arquivo em
+formato/extensão^[Se o nome de um arquivo é `meudoc.pdf`, sua *extensão* é `pdf`.]
+`pdf` (<http://en.wikipedia.org/wiki/Portable_Document_Format>) como
+(também) um arquivo em formato OOXML, cuja extensão de nome de arquivo
+usual é `docx` (<http://en.wikipedia.org/wiki/Office_Open_XML>).
+Assim, o documento resultante fica disponível de forma
+praticamente universal.
+
+Em nossa experiência, com essas ferramentas o processo de produção de textos
+técnico-científicos torna-se consideravalmente mais rápido e menos sujeito a
+erros e inconsistências.
+
+**Advertência**: O *escopo* de Manuscript é, propositadamente, limitado.
+Manuscript é capaz de produzir boas versões iniciais de: trabalhos
+escolares, relatórios técnicos, e artigos científicos.  Manuscript não é
+capaz de lidar com todas as sofisticações de documentos mais longos,
+tais como disssertações de mestrado, teses de doutorado, e
+livros. Para esses últimos, alguns elementos tais como o sumário, a
+lista de tabelas e a lista de figuras são demasiadamente específicos
+para poderem ser gerenciados por Markdown/Pandoc. Nesses casos, você
+provavelmente estará melhor servido utilizando diretamente LaTeX ou um
+processador de texto, embora Manuscript talvez ainda seja muito útil na
+geração dos *capítulos* individuais do seu documento.
+
+Além disso, nosso objetivo não é "ensinar" o leitor a escrever
+documentos técnico-científicos, mas sim ensiná-lo a usar boas
+ferramentas para escrevê-los.  Existem muitos artigos e trabalhos, com
+diferentes níveis de profundidade, que discutem os elementos de um
+artigo científico (tais como: introdução, revisão bibliográfica,
+discussão dos resultados, etc.) e também dão sugestões sobre sua
+redação de tal forma que eles tenham boas chances de ser aceitos em
+revistas científicas conceituadas (por exemplo:
+<http://www.escritacientifica.com>; @volpato2007;
+@correa2009). Atualmente, um dos nossos preferidos é @aceto2012.
+
+
+#  Antes de Prosseguir! \label{sec:prosseguir}
+
+Manuscript utiliza os seguintes programas de computador, que devem estar
+instalados antes de você começar: `Python 3.4.0`, `LaTeX/pdfTeX
+3.1415926-2.5-1.40.14` (em Linux) ou `MikTeX-LaTeX/pdfTeX 2.9.4902` (em
+Windows), e `Pandoc 1.14.0.1`.  Você pode verificar se eles estão instalados, e
+quais são suas versões, digitando, na linha de comando^[Em Linux, é possível
+instalar Python 2.7 e Python 3.4 lado a lado; nesse caso, tente também:
+`>python3 --version`]:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> python --version
+> pdftex --version
+> pandoc --version
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+O símbolo '`>`' acima representa o *prompt* da linha de comando.  Ele *varia* de
+acordo com o sistema operacional e as configurações do computador.  Por exemplo,
+em Linux o prompt de um de nós (NLD) *na verdade* é
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+manuscript$
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Em Windows, um *prompt* comum é (por exemplo)
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+C:\papers\manuscript>
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Os programas acima podem ser obtidos como se segue:
+
+Python: 
+:    A linguagem em que Manuscript é escrito. Python e excelente documentação podem
+     ser encontrados em <http://python.org>. Python está em um estado de transição,
+     com duas versões diferentes (Python 2 e Python 3) "convivendo".  Você deve
+     instalar Python 3.
+
+LaTeX:
+:    Um programa para formatar textos. LaTeX [@lamport1994] faz parte de 
+     um ecossistema mais
+     amplo, o ecossistema de TeX, um fantástico sistema de tipografia 
+     digital criado
+     por Donald Knuth [@knuth1983]. Em Windows, para ter LaTeX em seu
+     computador, baixe e instale MikTeX (<http://miktex.org>).  Em Linux, instale
+     TeXLive de um dos repositórios padrão.
+
+Pandoc: 
+:    Um programa para formatar textos, também! Conforme notamos na
+     seção \ref{sec:intro}, documentos podem ser escritos em Pandoc usando 
+     uma sintaxe
+     simplificada denominada Markdown (<http://en.wikipedia.org/wiki/Markdown> e
+     <http://daringfireball.net/projects/markdown/>).  Pandoc estende a sintaxe de
+     Markdown para que alguns elementos importantes, tais como 
+     equações e referências
+     bibliográficas, sejam incorporados. O sítio oficial de Pandoc é
+     <http://pandoc.org>.
+     
+Python, LaTeX e Pandoc são fáceis de instalar.  Daqui para a frente, nós vamos
+supor que você os instalou em seu computador, e que eles *funcionam*! Se as
+instruções disponíveis nos *links* acima não forem suficientes, procure ajuda
+para instalá-los.
+
+# Instalação e teste de Manuscript \label{sec:instteste}
+
+Vá para <http://www.github.com/nldias/manuscript>. Clique em `Download
+ZIP`. Extraia o arquivo `.zip` para uma pasta (cujo nome, por *default*, será
+`manuscript-master`). 
+
+Copie a pasta `manuscript-master` *e todo o seu conteúdo* para um local adequado
+em seu computador. Copie o arquivo `manuscript-pt.txt` para um novo arquivo, e
+comece a modificá-lo para produzir seu documento.  Por exemplo, se você estiver
+preparando um documento denominado `meudoc`, copie o arquivo acima para
+`meudoc.txt`.
+
+Agora edite `meudoc.txt` (você vai precisar usar um *editor de texto*; veja a
+seção \ref{sec:modus}), e modifique o que for necessário. Por exemplo, você pode
+mudar o título,
+
+~~~~~~~~~~~~~~~~~
+% Manuscript: Documentos científicos em pdf e docx a partir de \
+  arquivos-texto com Pandoc e LaTeX
+~~~~~~~~~~~~~~~~~
+
+para:
+
+~~~~~~~~~~~~~~~~~
+% Meudoc: Algo diferente que eu escrevi.
+~~~~~~~~~~~~~~~~~
+
+Para testar se Manuscript está funcionando, faça, em Linux,
+
+~~~~~~~~~~~~~~~~~
+> chmod u+x manuscript.py
+~~~~~~~~~~~~~~~~~
+
+(uma única vez) e
+
+~~~~~~~~~~~~~~~~~
+> ./manuscript.py meudoc.txt
+~~~~~~~~~~~~~~~~~
+
+e em Windows,
+
+~~~~~~~~~~~~~~~~~
+> chcp 1252
+~~~~~~~~~~~~~~~~~
+
+(uma única vez) e
+
+~~~~~~~~~~~~~~~~~
+> manuscript.py meudoc.txt
+~~~~~~~~~~~~~~~~~
+
+
+Se tudo correr bem, isso deve gerar os arquivos `meudoc.pdf` e `meudoc.docx` na
+pasta.  Abra-os, e verifique se eles foram gerados corretamente.
+
+As primeiras linhas do arquivo original, `manuscript-pt.txt', são 
+
+~~~~~~~~~~~~~~~~~
+% Manuscript: Documentos científicos em pdf e docx a partir de \
+  arquivos-texto com Pandoc e LaTeX
+% Nelson Luís Dias\
+  Departamento de Engenharia Ambiental,\
+  Universidade Federal do Paraná. email: `nldias@ufpr.br`\
+  Luzia Schalkoski Dias\
+  PUC/PR. email: `luzia.schal@gmail.com`
+% 2015-06-08
+<!-- language: brazil -->
+<!-- bibliography: manuscript-pt.bib -->
+<!-- citation-style: abnt.csl -->
+~~~~~~~~~~~~~~~~~
+
+As linhas que se inciam com '`%`' e são continuadas com barras invertidas '`\`'
+são uma extensão (sobre a sintaxe original de Markdown) de Pandoc para Título,
+Autor(es), e Data, e serão descritas (onde???). As próximas 3 linhas, que se
+iniciam com '`<!--`', são extensões específicas de Manuscript. Se você vai usar
+Manuscript, elas são (todas as três) *obrigatórias*, e o lugar convencional para
+elas é logo depois da linha com a data do documento.  Vamos nos concentrar
+nelas.
+
+A primeira linha desse tipo, 
+'`<!-- language: brazil -->`'^[Em Pandoc, tudo o que fica entre '`<!--`' e
+'`-->`' é um *comentário*, e não é repassado ao documento gerado. Manuscript
+utiliza três linhas de comentários "especiais", logo depois da data, para
+especificar a língua em que o documento é escrito, a base de dados
+bibliográficos, e o estilo de citações.],
+especifica o código da língua em que o
+documento foi escrito.  O código é mesmo usado no pacote LaTeX `babel`.  A
+variante brasileira do Português é indicada pelo código `brazil`. A lista
+completa de línguas disponíveis e seus códigos, e maiores detalhes sobre
+`babel`, encontram-se em
+<http://www.ctan.org/tex-archive/macros/latex/required/babel/base/babel.pdf>. Um
+pequeno resumo com algumas línguas ocidentais é mostrado na Tabela
+\ref{tab:linguas}. Note que uma mesma língua pode ter mais de um código, em
+função de suas variantes.
+
+A segunda linha, '`<!-- bibliography: manuscript-pt.bib -->`', especifica a base
+de dados bibliográfica que Manuscript deve utilizar. Uma descrição detalhada do
+uso de uma base de dados bibliográfica é dada na seção \ref{sec:consbib}. 
+
+A terceira linha, '`<!-- citation-style: abnt.csl -->`', diz respeito ao estilo
+das citações bibliográficas a serem usadas. Esse tópico também é coberto na
+seção \ref{sec:consbib}.
+
+Mesmo que você não vá utilizar bases de dados bibliográficos, e estilos de
+citações, você deve indicar *algum arquivo* `*.bib` na linha '`<!--
+bibliography:`', e algum arquivo '`*.csl`', na linha '`<!-- citation-style:`'.
+
+
+Manuscript é, propositadamente, tão simples quanto possível: não há uma instalação
+centralizada. Para utilizá-lo, simplesmente copie novamente a pasta
+`manuscript-master`, e copie/renomeie/modifique os arquivos `.txt` (com o texto do
+seu documento); e comece tudo de novo.
+
+----------------------------------------------------------------------
+Língua               Código `babel`
+----------           -------------------------------------------------
+Inglês               `english`, `USenglish`, `american`, `UKenglish`, 
+                     `british`, `canadian`, `australian`
+
+Francês              `french`, `francais`, `canadien`, `acadian`
+
+Alemão               `austrian`, `german`, `germanb`, `ngerman`, `naustrian`
+
+Italiano             `italian`
+
+Latim                `latin`
+
+Português            `portuges`, `portuguese`, `brazilian`, `brazil`
+
+Espanhol             `spanish`
+----------------------------------------------------------------------
+
+Table: Tabela \ref{tab:linguas}: Códigos `babel` para algumas línguas ocidentais\label{tab:linguas}.
+
+
+# Uma maneira diferente de escrever documentos técnicos \label{sec:modus}
+
+O programa `manuscript.py` é um *pré-processador* da liguagem Markdown com
+extensões Pandoc. Uma descrição completa de Markdown e Pandoc pode ser
+encontrada em <http://pandoc.org>. Como a maioria dos textos
+disponíveis na Internet sobre Markdown estão em Inglês, nós fazemos nas seções
+\ref{sec:elementostextuais}--\ref{sec:equacoes} uma breve introdução aos elementos
+essenciais de Markdown, utilizando exemplos do próprio documento que você está
+lendo. 
+
+Manuscript é, ao mesmo tempo, o exercício de uma *disciplina* de escrever, e um
+pequeno *script* (programa) em Python.
+
+A *disciplina*, ou a *rotina* de escrever, consiste no seguinte:
+
+1. Reunir as informações para a redação do documento.  Isso envolve: reunir a
+bibliografia, e sistematizá-la em um arquivo com formato específico (BibTeX);
+reunir as tabelas e as figuras que serão usadas; e reunir as equações que serão
+usadas. 
+
+2. Editar o texto de seu documento com um editor de texto.  Atenção! Um editor
+de texto não é um processador de texto. Um editor de texto não produz letras de
+diferentes tamanhos, não cria tabelas, e não insere figuras. Um editor de texto
+reproduz o texto que você datilografa, em geral com um `tipo de largura
+constante` (de "máquina de escrever", monoespaçado) para que as colunas e
+espaços fiquem bem claros. Um editor de texto que "vem" com Windows chama-se
+*notepad*, ou *bloco de notas* nas versões em Português.  Uma boa alternativa é
+*MarkdownPad 2* (<http://markdownpad.com/>), que tem a vantagem de marcar a
+cores a sintaxe de Markdown. Em Linux, editores de texto simples são o *gedit*
+(<http://projects.gnome.org/gedit/>) --- que também funciona muito bem em
+Windows, e o *kate* (<http://kate-editor.org>). Usuários mais avançados (também
+conhecidos como *nerds*) costumam preferir o *vim* (<http://www.vim.org>), ou o
+*emacs* (<http://www.gnu.org/software/emacs/>). Esses dois últimos possuem
+versões para os 3 sistemas operacionais mais comuns hoje em dia: Windows, Linux
+e Mac OS X.
+
+3. Abrir um *prompt* de comando e executar o comando `manuscript.py` conforme
+descrito na seção \ref{sec:instteste} acima.
+
+4. Inspecionar os arquivo gerados `.pdf` e/ou `.docx`.  Se houver mudanças a fazer,
+voltar para 1. ou para 2..
+
+
+Em resumo, o modo de operar com Manuscript é totalmente diferente daquele usado em
+um processador de texto.  Em vez de abrir e usar um único programa (uma única
+"janela"), o usuário alterna o uso de pelo menos 3 janelas: uma com a linha de
+comando, uma com o editor de texto com o arquivo `.txt` aberto, e uma com um
+visualizador de arquivos `.pdf`. Nesse modo de operar, o arquivo `.pdf` é
+constantemente sobrescrito por Manuscript. Em Windows, dependendo do visualizador,
+isso pode gerar um erro, porque alguns visualizadores "travam" (*lock*) o
+arquivo `.pdf` não permitindo que ele seja sobreescrito.  Em nossa experiência,
+tanto o evince (<https://wiki.gnome.org/Apps/Evince>) quanto o SumatraPDF
+(<http://blog.kowalczyk.info/software/sumatrapdf/>) não têm esse problema.
+
+Finalmente, vale a pena mencionar que esse mesmo modo de operar é o utilizado
+por LaTeX.  A única diferença é que a sintaxe de marcação do arquivo-fonte é
+diferente.  No caso de Manuscript/Pandoc, a sintaxe é Markdown, e o arquivo-fonte
+possui extensão `txt` ou `md`; no caso de LaTeX, a sintaxe é
+LaTeX, e o arquivo-fonte é um arquivo que costuma ter extensão `tex`. Pandoc
+*sempre* utiliza LaTeX para gerar a saída em `pdf`.  Esse é um dos motivos pelos
+quais é preciso instalá-lo.  Após cada rodada de Manuscript, além dos arquivos
+`.pdf` e `.docx`, haverá um arquivo com mesmo nome no formato LaTeX (com
+extensão `tex`), que poderá,
+eventualmente, ser posteriormente modificado para ajustes finos.
+
+
+# O formato de saída \label{sec:tipo}
+
+
+Manuscript é basicamente um envelope para o uso de Pandoc. Como poderá ser
+constatado, a aparência do arquivo `.pdf` gerado difere consideravelmente da
+aparência do arquivo `.docx`.  Isso é proposital, e nós decidimos por não fazer
+as duas saídas "parecidas" após considerável ponderação. 
+
+O resultado é que o arquivo `.pdf` é tipografado com os tipos^[Em Inglês, "tipo"
+se escreve *font*. Segue-se o anglicismo amplamente usado "fonte", embora o
+sinônimo correto para *font*, e que será usado aqui, seja "tipo".]  padrão de
+LaTeX (*Computer Modern Roman* e derivados: veja @knuth1983), enquanto que o
+arquivo `.docx` é tipografado com os tipos padrão do Microsoft Word na
+atualidade (2015).  O *conteúdo* de ambos os arquivos, entretanto, é idêntico.
+
+Essa na verdade é a filosofia de Markdown/Pandoc: uma filosofia minimalista, que
+enfatiza o conteúdo, sacrificando um pouco a *forma* para que o mesmo texto
+possa ser formatado para saídas muito diversas, tais como `html`, `pdf` e
+`docx`. Note que as convenções desses formatos são diferentes.  Em particular,
+`html` não possui o conceito de página. 
+
+Isso significa que Markdown/Pandoc proporcionam um controle  limitado sobre
+a *forma* do texto. Opções para escolher o tipo e o tamanho da letra, forçar
+espaços verticais, mudar o número de colunas do texto, etc., são
+inexistentes. Entretanto, tanto o arquivo `.tex` (que também é gerado, e fica
+guardado na pasta após Manuscript rodar) quanto o arquivo `.docx` podem ser
+modificados posteriormente, para uma formatação final de acordo com os objetivos
+do usuário (por exemplo, revistas científicas possuem exigências próprias tanto
+sobre os arquivos `.tex` (quando os aceitam) quanto sobre os arquivos `.docx`).
+
+*Adie o máximo possível* modificações diretas nos arquivos `.tex` e `.docx`,
+porque Manuscript os *sobrescreve*. Essas modificações são *perdidas* toda vez que
+você roda Manuscript. Se o seu objetivo for gerar um arquivo com formatação
+específica, você precisará escolher em que ponto "abandonar" Markdown, e passar
+a fazer as modificações diretamente no arquivo `.tex` (usando seu editor de texto
+e LaTeX a partir desse ponto) ou no arquivo `.docx` (usando um processador de
+texto a partir desse ponto). A regra, obviamente, é fazê-lo apenas quando a
+maior parte do trabalho repetitivo de numerar equações, numerar e incluir
+figuras, e incluir referências biliográficas, tiver sido concluído.
+
+# Os elementos  de um relatório técnico ou artigo científico \label{sec:elem}
+
+Escrever um documento técnico-científico é inerentemente difícil. Existem muitas
+*regras* que precisam ser aprendidas. Neste trabalho, nós vamos seguir passo a
+passo a *construção* de um documento técnico em todos os seus elementos
+importantes. Eles são:
+
+* Elementos textuais: título, autores, resumo, seções, parágrafos, listas, etc..
+* Bibliografia
+* Tabelas
+* Figuras
+* Equações
+
+
+Para cada um desses elementos, existem regras que devem ser seguidas, e que
+tornam a compreensão do que você escreve mais fácil para o seu leitor.   O papel
+de Manuscript é o de *facilitar* a produção, ou utilização, de cada um desses
+elementos.
+
+Nas próximas seções, nós mostramos como entrar com cada um desses elementos no
+arquivo-fonte `.txt` e no arquivo de bibliografia `.bib`. 
+
+**Importante**: certifique-se de que todos os arquivos que você produzir estão
+  codificados como UTF-8. Os editores de texto mencionados na seção
+  \ref{sec:modus} possuem opções para salvar os arquivos com essa codificação,
+  ou o fazem automaticamente.
+
+Os exemplos que nós daremos servirão para cobrir uma parte substancial da
+sintaxe de marcação Markdown. Eles são exemplos tirados diretamente do corpo
+deste artigo (`manuscript-pt.txt`).  Abrindo o arquivo `manuscript-pt.txt` e
+comparando-o com os arquivos de saída `manuscript-pt.pdf` e `manuscript-pt.docx` você
+poderá aprender, por meio de exemplos, como se faz essa marcação. Uma descrição
+um pouco mais detalhada da sintaxe de marcação para cada um dos elementos de
+texto é dada nas próximas seções.
+
+# Elementos textuais \label{sec:elementostextuais}
+
+## Título, autor, data \label{subsec:tit}
+
+Todo artigo tem título e autor, ou autores. 
+Título, autor(es) e data são produzidos em Pandoc com um *bloco de título*.
+Em Pandoc, um bloco de título tem a forma
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% título
+% autor
+% data
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 
+e é colocado no *início* do arquivo `.txt`.
+
+Essas linhas são 
+interpretadas de maneira especial: a primeira linha é interpretada
+como o título; a segunda, como os autores; e a terceira, como a data. 
+
+Quando há necessidade de mais de uma linha física para título, autor ou data,
+elas são separadas pelo caractere de barra invertida,'`\`'.  Por exemplo, o
+bloco de título deste documento é
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+% Manuscript: Documentos científicos em pdf e docx a partir de \
+  arquivos-texto com Pandoc e LaTeX
+% Nelson Luís Dias\
+  Departamento de Engenharia Ambiental,\
+  Universidade Federal do Paraná. email: `nldias@ufpr.br`\
+  Luzia Schalkoski Dias\
+  PUC/PR. email: `luzia.schal@gmail.com`
+% 2015-06-08
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Em primeiro lugar, note as aspas invertidas: em Markdown, elas fazem com que
+`nldias@ufpr.br` e `luzia.schal@gmail.com` sejam tipografados com tipo
+monoespaçado.
+
+## Resumo \label{subsec:resumo}
+
+Não existe uma sintaxe específica, em Markdown ou em Pandoc, para o Resumo. No
+entanto, texto iniciando-se com o caractere '`>`' na primeira coluna é
+tipografado com margens estendidas em ambos os lados, sendo entendido por
+Markdown como uma citação direta por extenso (*block quotation*). Isso é
+suficiente para destacar o Resumo.  Assim, o Resumo deste artigo foi escrito
+como
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> **Resumo**
+
+> Nós apresentamos um novo pré-processador para
+> Pandoc/Markdown, denominado Manuscript.  Manuscript é escrito em
+> Python, e adiciona referências cruzadas no estilo LaTeX,
+> '`\label`'/'`\ref`', à linguagem de Marcação Markdown com
+> extensões Pandoc.  Utilizando Manuscript/Pandoc/Markdown (e
+> LaTeX em segundo plano), é possível sistematizar a
+> produção de documentos técnicos e científicos
+> relativamente *simples*, tais como trabalhos escolares,
+> relatórios técnicos e artigos científicos. Os detalhes do
+> processo de produção desses tipos de documento, que
+> utiliza intensamente tabelas, figuras, equações e
+> referências bibliográficas e que as atualiza
+> constantemente, são discutidos. Arquivos de saída '`pdf`'
+> e '`docx`' são gerados automaticamente. Algumas vantagens
+> são maior velocidade e eliminação de erros e
+> inconsistências nos arquivos de saída.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Os dois asteriscos em torno da palavra `Resumo` fazem com que ela seja impressa
+em negrito nos arquivos `pdf` e `docx`.  Um único asterisco produz itálico, como
+se vê em torno da palavra `simples`.
+
+## Seções e sub-seções \label{subsec:secoes}
+
+O restante do texto é formado por *seções* e *sub-seções*. No seu arquivo
+`.txt`, elas são indicadas por um símbolo '`#`' ou dois ('`##`'),
+respectivamente. 
+
+A seção atual foi iniciada no arquivo `manuscript-pt.txt` com 
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Elementos textuais \label{sec:elementostextuais}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A sub-seção atual foi iniciada com 
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+## Seções e sub-seções \label{subsec:secoes}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Seções e sub-seções são numeradas, e os títulos devem ocupar uma única linha.
+As "etiquetas" de cada (sub)seção são os nomes que se seguem a '`\label{sec:`' e
+'`label{subsec:`', terminados por uma chave '`}`'. Os prefixos '`sec:`' e
+'`subsec:`' são **obrigatórios**. Sem eles, Manuscript não funcionará.
+
+
+Uma vez introduzidas as etiquetas, para referenciar a seção atual, nós
+escrevemos '`seção \@ref{sec:elementostextuais}`', e obtemos: seção
+\ref{sec:elementostextuais}. Para referenciar a sub-seção atual, nós escrevemos:
+'`subseção \@ref{subsec:secoes}`', e obtemos: subseção \ref{subsec:secoes}. Note
+que as sequências '`\label{sec:` ... `}`' apenas marcam as seções, e não
+aparecem no texto final, enquanto que as referências '`\@ref{sec:` ... `}`' são
+substituídas pelos números correspondentes das seções (idem para as subseções).
+
+Observe que Manuscript substitui todas as instâncias de '`\@ref`' no seu arquivo
+`.txt` pelos números correspondentes. No parágrafo acima, entretanto, nós
+*realmente* queríamos escrever  '`\@ref`' --- sem substituições! Qual é o segredo?
+Muito simples: se você escrever 
+
+    \@ref
+
+isso aparecerá no seu documento `pdf` e no seu documento `docx` finais como 
+
+    \ref 
+
+Manuscript, Pandoc e LaTeX numeram as seções e subseções automaticamente para você.
+
+A vantagem desse esquema é que a numeração, e todas as referências, são
+atualizadas automaticamente.  Por exemplo, se você inserir uma nova sub-seção
+
+    ## Nova subseção \label{subsec:novasubsec}
+
+neste documento *antes* da subseção atual, após rodar Manuscript o número da
+subseção atual terá sido modificado automaticamente para 7.4, assim como todas
+as referências correspondentes dentro do texto.
+
+## Parágrafos e listas \label{subsec:paragrafos}
+
+Os parágrafos em Pandoc são trechos contínuos de texto separados por linhas em
+branco. 
+
+Por exemplo, aqui temos dois parágrafos distintos.
+
+Esse trecho foi gerado com:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Os parágrafos em Pandoc são trechos contínuos de texto
+separados por linhas em branco.
+
+Por exemplo, aqui temos dois parágrafos distintos.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Listas são produzidas da forma óbvia.  Eis aqui uma lista de feira:
+
+1. Maçãs
+2. Laranjas
+3. Bananas
+
+Esse trecho foi gerado com:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+Listas são produzidas da forma óbvia.  Eis aqui uma lista de feira:
+
+1. Maçãs
+2. Laranjas
+3. Bananas
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Consulte o próprio arquivo `manuscript-pt.txt` para outros exemplos mais
+sofisticados de listas, tais como os utilizados nas seções \ref{sec:prosseguir},
+\ref{sec:modus} e \ref{sec:elem}.
+
+
+# Construindo uma bibliografia \label{sec:consbib}
+
+## A maneira fácil \label{subsec:bibfacil}
+
+A maneira "fácil" de utilizar referências bibliográficas em um documento técnico
+é formatá-las você mesmo. Nossos exemplos desta subseção vêm de um trabalho de
+um dos autores (LSD). Considere o seguinte parágrafo:
+
+> Theoretical considerations around the notion of acts of speech (Austin 1962;
+> Searle 1969) and the rise of the linguistic politeness theory of
+> Brown/Levinson (1987), both seeking to explain the functioning of language
+> from universal assumptions, have given impetus to the appearance of a large
+> number of intercultural studies about specific speech acts.
+
+Esse parágrafo foi datilografado sem nenhum recurso especial a referências
+bibliográficas:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Theoretical considerations around the notion of acts of
+speech (Austin 1962; Searle 1969) and the rise of the
+linguistic politeness theory of Brown/Levinson (1987), both
+seeking to explain the functioning of language from
+universal assumptions, have given impetus to the appearance
+of a large number of intercultural studies about specific
+speech acts.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+O autor agora precisa produzir a lista de referências bibliográficas
+correspondentes ao fim do documento.  Você pode fazer isso simplesmente
+escrevendo
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Referências Bibliográficas {.unnumbered}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   
+ao fim do documento, e em seguida formatando você mesmo cada referência. No
+nosso exemplo,
+
+--------------------------------
+
+# Referências Bibliográficas {.unnumbered}
+
+Austin, John L. (1962): How to Do Things with Words. Cambridge:
+Harrard University Press.  
+
+Brown, Penelope/ Levinson, Stephen (1987): Politeness: Some universals
+in language usage. Cambridge University Press.
+
+Searle, John R. (1969/1981): Os atos de fala --- um ensaio de Filosofia
+da Linguagem. Coimbra: Livraria Almedina.
+
+--------------------------------
+
+As referências acima foram produzidas com 
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Referências Bibliográficas {.unnumbered}
+
+Austin, John L. (1962): How to Do Things with Words. Cambridge:
+Harrard University Press.  
+
+Brown, Penelope/ Levinson, Stephen (1987): Politeness: Some universals
+in language usage. Cambridge University Press.
+
+Searle, John R. (1969/1981): Os atos de fala --- um ensaio de Filosofia
+da Linguagem. Coimbra: Livraria Almedina.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+A principal limitação dessa abordagem é que ela requer a reformatação das
+referências a cada novo documento.  Como frequentemente o estilo de citação muda
+(porque mudou a revista científica, a instituição do relatório técnico, etc.),
+as referências precisarão ser reformatadas manualmente a cada vez. 
+
+A subseção seguinte ensina uma forma diferente, que utiliza *bases de dados
+bibliográficos*. Uma vez que a referência foi inserida na base de dados, ela
+pode ser utilizada dentro do texto por meio de uma *chave*. Em Manuscript, o estilo
+biblográfico é especificado por meio do arquivo `.csl`, conforme nós já
+discutimos na seção \ref{sec:instteste}, e vamos rever agora.
+
+
+## A maneira difícil \label{subsec:bibdificil}
+
+As *referências bibliográficas* do seu trabalho devem ser datilografadas em um
+*arquivo à parte*. O nome desse arquivo é dado explicitamente na 3^a^ linha do
+arquivo "mestre" `.mns` (veja os exemplos na seção \ref{sec:instteste}).  O
+arquivo, com extensão `bib`, pode estar em qualquer lugar do seu computador,
+desde que o caminho seja indicado explicitamente.  Por exemplo, um caminho
+válido em Windows poderia ser '`C:\bibliografia\refs.bib`', enquanto que o
+artigo poderia estar em uma pasta diferente, digamos, '`C:\papers\meudoc`'.
+
+Na 4^a^ linha do arquivo `.mns` está o nome de um artigo de estilo bibliográfico
+no formato CSL (*citation style language*: veja <http://citationstyles.org>) .
+Para gerar este documento (`manuscript-pt`), Manuscript usou o arquivo `abnt.csl` que
+basicamente implementa as regras de citações bibliográficas da
+@abnt:referencias. Essa não é a única opção possível. O sítio
+<http://www.zotero.org/styles> possui um enorme repositório de estilos
+bibliográficos utilizados nas principais revistas e organizações científicas do
+mundo. O arquivo `abnt.csl` que usamos é uma versão levemente modificada do
+original `abnt.csl` obtido no sítio acima.  Você deve utilizar o arquivo `.csl`
+que for mais adequado ao seu documento.
+
+Este artigo, `manuscript-pt.txt`, vem com um arquivo de referências bibliográficas
+`manuscript-pt.bib` (em <http://www.github.com/nldias/manuscript>) como exemplo.  Por
+simplicidade, ele contém apenas as referências citadas em `manuscript-pt.txt`.
+Isso entretanto não é necessário: você pode manter um arquivo de referências
+"centralizado", em um único lugar do seu computador (veja a referência
+ao caminho do arquivo `.bib` no parágrafo acima), com todas as suas referências
+bibliográficas (constituindo um banco de dados bibliográfico), e reutilizá-lo
+sempre que necessário.
+
+O arquivo de referências biliográficas pode ser editado e modificado com o mesmo
+editor de texto que você utiliza para modificar os arquivos `.txt` e `.mns`. No
+entanto, é muito conveniente utilizar um gerenciador de banco de dados
+bibliográfico para adicionar referências e modificá-las no arquivo `.bib`.
+Nossa sugestão entusiástica é o uso de JabRef
+(<http://jabref.sourceforge.net/>), que tem a vantagem de ser independente do
+sistema operacional utilizado.
+
+Cada entrada de uma referência bibliográfica em BibTeX possui um código
+específico, tal como `@article` (um artigo), `@book` (um livro), `@incollection`
+(um capítulo em uma coletânea), etc..  Um artigo publicado em evento científico
+frequentemente é listado com `@inproceedings`.  Exemplo (note que
+maiúsculas e minúsculas não importam em `@inproceedings`):
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+@InProceedings{azevedo1988,
+  Title =    {Adaptação da equação de Brunt, modificada por Penman, 
+              às condições semi-áridas do Nordeste do Brasil. },
+  Author =   {P. V. de Azevedo and M. M. V. B. R. Leitão 
+              and J P. R. Costa},
+  Booktitle ={V Congresso Brasileiro de Meteorologia},
+  Year =     1988,
+  Address =  {Rio de Janeiro},
+  Month =    {Novembro},
+  Pages =    {I.1--I.5},
+  Publisher ={Sociedade Brasileira de Meteorologia},
+  Volume =   1
+}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Os campos obrigatórios de cada tipo de entrada variam.  JabRef tem a vantagem de
+listar os campos obrigatórios de cada tipo automaticamente, quando uma
+referência é adicionada. Se você preferir inserir as referências bibliográficas
+manualmente utilizando um editor de texto, o documento 
+<https://abntex2.googlecode.com/hg-history/2012-12-20%20-%20v1.0%20release%20to%20CTAN/abntex2cite.pdf>
+contém um grande número de exemplos de entradas de BibTeX.
+
+Para citar a referência acima, nós escrevemos no arquivo `.txt`:
+
+~~~~~~~~~~~~~~~~~~~~~~
+Os parâmetros da equação de Brunt podem ser ajustados localmente
+[@azevedo1988].
+~~~~~~~~~~~~~~~~~~~~~~
+
+ou:
+
+~~~~~~~~~~~~~~~~~~~~~~
+Conforme mostrado por @azevedo1988, os parâmetros da equação 
+de Brunt podem ser ajustados localmente.
+~~~~~~~~~~~~~~~~~~~~~~
+
+Ambos os casos são tipografados como se segue:
+
+Os parâmetros da equação de Brunt podem ser ajustados localmente
+[@azevedo1988].
+
+Conforme mostrado por @azevedo1988, os parâmetros da equação de Brunt
+podem ser ajustados localmente.
+
+Uma última observação: o formato do arquivo `.bib` deve seguir a sintaxe de
+BibTex *estritamente*: uma vírgula a mais ou a menos, ou uma chave não-fechada,
+invalidam a referência e podem impossibilitar a produção das novas versões dos
+arquivos de saída `.pdf` e `.docx`.  O uso de JabRef é vantajoso também nesse
+ponto, pois ele formata corretamente os campos das referências bibliográficas.
+
+No final do seu arquivo `.txt`, introduza o início das referências
+bibliográficas (que são incluídas automaticamente por Pandoc no fim dos arquivos
+de saída `.pdf` e `docx`) com algo do tipo
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Referências  {.unnumbered}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Essa deve ser, rigorosamente, a última linha do seu arquivo `.txt`.
+
+# Tabelas \label{sec:tabelas}
+
+Tabelas são coisas que podem se tornar muito complicadas. Mas a maioria das
+tabelas de que nós precisamos em artigos científicos são *simples*! Em geral,
+para fazer uma tabela simples como a Tabela \ref{tab:simples}, nós escrevemos
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ País    População (milhões)    PIB (10^9^ US$ )      IDH
+ -----   --------------------   --------------------  -------
+ EUA     313.9                  15680                 0.937
+ Brasil  198.7                   2253                 0.730
+ Cuba     11.2                     61                 0.780
+
+Table: Tabela \ref{tab:simples}: Uma tabela simples.\label{tab:simples}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Formatos um pouco mais sofisticados de tabelas também são possíveis com
+Pandoc. Para mais detalhes, veja <http://pandoc.org>.
+
+Observe o mesmo expediente usado no bloco título-autor-data de utilizar uma
+barra invertida (`\`) para "continuar" uma linha quando ela se torna muito
+longa.
+
+
+ País    População (milhões)    PIB (10^9^ US$ )      IDH
+ -----   --------------------   --------------------  -------
+ EUA     313.9                  15680                 0.937
+ Brasil  198.7                   2253                 0.730
+ Cuba     11.2                     61                 0.780
+
+Table: Tabela \ref{tab:simples}: Uma tabela simples.\
+\label{tab:simples}
+
+Observe também que, *ao contrário das seções e subseções*, o número da tabela
+deve ser entrado explicitamente "duas vezes".  O número propriamente dito é
+indicado por "`\ref{tab:simples}`".  No final da legenda da tabela, entretanto,
+nós precisamos "etiquetá-la", escrevendo "`\label{tab:simples}`". Depois de
+rodarmos Manuscript, todas as instâncias de `\ref{tab:simples}` são substituídas
+pelo seu número, que é \ref{tab:simples}. Guarde bem esse esquema: ele é o mesmo
+utilizado nas figuras, e praticamente o mesmo utilizado nas equações.
+
+O prefixo '`tab:`' é **obrigatório** antes do nome de
+cada tabela.  Sem ele, Manuscript não funcionará.
+
+Vamos aproveitar para apresentar sobrescritos e subscritos em Markdown:
+'`10^9^`' produz 10^9^; '`H~2~SO~4~`' produz H~2~SO~4~.  É importante notar que
+sobrescritos e subscritos em *equações* possuem sintaxe diferente, que é a
+sintaxe utilizada por LaTeX.  Mais sobre isso na seção \ref{sec:equacoes}.
+
+# Figuras  \label{sec:figuras}
+
+A Figura \ref{fig:tweedie}, nossa primeira figura, mostra um pequeno experimento
+com a distribuição Tweedie. No arquivo `manuscript-pt.txt`, nós escrevemos:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+![Figura \ref{fig:tweede}: Um experimento com a distribuição Tweedie 
+\label{fig:tweedie}](dismeans.jpg)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Isso inclui o arquivo `dismeans.jpg`, com legenda: "Um experimento com a
+distribuição Tweedie".  `\label{fig:tweedie}` "etiqueta" (do verbo "etiquetar")
+a figura, cujo número agora pode ser referido com `\ref{fig:tweedie}`.
+
+![Figura \ref{fig:tweedie}: Um experimento com a distribuição Tweedie \label{fig:tweedie}](dismeans.jpg)
+
+Observe o mesmo esquema de "numerar duas vezes" usado para as tabelas. O número
+propriamente dito da figura é indicado por '`\ref{fig:tweedie}`'.  No final da
+legenda da figura, nós precisamos "etiquetá-la", escrevendo
+'`\label{fig:tweedie}`'.
+
+A próxima figura que nós veremos, a Figura \ref{fig:gaussian}, é um gráfico de
+uma distribuição Normal padrão que, por sua vez, foi gerada com
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+![Figura \ref{fig:gaussian}: A distribuição Normal
+padrão \label{fig:gaussian}](gaussian.jpg)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+![Figura \ref{fig:gaussian}: A distribuição Normal
+padrão \label{fig:gaussian}](gaussian.jpg)
+
+
+
+Para referenciar uma figura nós usamos '`\ref{fig:`' ... '`}`'.  Por exemplo, o
+texto que referencia a Figura \ref{fig:gaussian} é
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+A próxima figura que nós veremos, a Figura \ref{fig:gaussian}, 
+é um gráfico de uma distribuição Normal padrão
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+O prefixo '`fig:`' é **obrigatório** antes do nome de
+cada figura.  Sem ele, Manuscript não funcionará.
+
+Em nossa experiência, o formato JPEG (<http://en.wikipedia.org/wiki/JPEG>),
+utilizado nos arquivos `dismeans.jpg` e `gaussian.jpg`, é o ideal para as
+figuras, pois ele é bem "aceito" tanto por PdfLaTeX quanto pelos processadores
+de texto. Tanto o arquivo final `.pdf` quanto o arquivo `.docx`, portanto,
+incorporam as figuras com boa qualidade. Entretanto, o usuário precisa produzir
+as figuras com resolução adequada, e o *tamanho* correto. Não há opções em
+Pandoc/Markdown para redimensionar automaticamente o tamanho da figura.
+
+
+# Equações \label{sec:equacoes}
+
+## Sempre entre dois cifrões \label{subsec:cifroes}
+
+Uma regra de ouro no uso de equações é que variáveis e expressões matemáticas
+devem ser tipografadas de maneira distinta do texto, para ressaltá-las.  Em
+geral, isso é feito com itálicos. Em Manuscript/Pandoc, todas as vezes que um texto
+é digitado entre sinais de cifrão ('`$`' ... '`$`') ele é considerado uma
+equação digitada com a sintaxe de LaTeX.  Isso vale tanto para
+variáveis/equações dentro do próprio texto como para equações em
+destaque. Assim, o texto
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Uma das equações mais famosas do mundo é
+
+$\displaystyle E = mc^2$.\elabel{eq:emc2}\hfill(\ref{eq:emc2})
+
+Em (\ref{eq:emc2}), $m$ é a massa, e $c$ é a velocidade da luz.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+é tipografado como:
+
+Uma das equações mais famosas do mundo é
+
+$\displaystyle E = mc^{2}$.\elabel{eq:emc2}\hfill(\ref{eq:emc2})
+ 
+Em (\ref{eq:emc2}), $m$ é a massa, e $c$ é a velocidade da luz.
+
+Na última linha acima, observe como o número da equação é corretamente
+introduzido, e como as variáveis $m$ e $c$ ficam destacadas em itálico.
+
+Da mesma forma que no caso de figuras e tabelas, é preciso "numerar duas vezes"
+as equações, usando pares '`\elabel`' ... '`\ref`'.  Por motivos técnicos de
+como as coisas são implementadas em LaTeX, precisamos usar '`\elabel`', e não
+'`\label`', para as equações.  A sequência '`\hfill`' é opcional: quando usada,
+ela produz os números das equações alinhados à direita no arquivo `.pdf`.
+Atenção: no arquivo `.docx` isso não é possível, e os números precisam ser
+alinhados manualmente, *a posteriori*.
+
+Manuscript segue a filosofia minimalista de Pandoc: apenas equações individuais
+podem ser inseridas entre os pares de '`$`'. Isso corresponde ao mecanismo mais
+simples de formatação matemática LaTeX, que consiste no mesmo uso de expressões
+entre cifrões.  Em geral, recursos avançados de formatação em LaTeX tais como os
+proporcionados pelo pacote `amstex` (<http://www.ctan.org/pkg/amstex>) não podem
+ser utilizados^[A rigor, se você tentar utilizar '`\begin{equation}`'
+... '`\end{equation}`', '`\begin{align}`' ... '`\end{align}`', etc., *fora* dos
+pares de `$`, eles aparecerão no seu arquivo `.pdf`, porque Pandoc os transfere
+para o arquivo intermediário `.tex`, mas não no arquivo `.docx`.  Para total
+consistência entre os dois arquivos de saída, é melhor evitá-los.], mas os
+recursos "básicos" de LaTeX descritos em @lamport1994, funcionam.
+
+Manuscript estende ligeiramente Pandoc fornecendo um novo *macro*,
+'`\elabel`', definido no arquivo `manuscript.latex`.  Juntamente com o uso
+explícito de '`\displaystyle`' (ilustrado no exemplo acima), isso permite que as
+equações sejam formatadas em destaque e com numeração quando necessário.  Essas
+equações destacadas são sempre digitadas em parágrafos individuais.
+
+Equações ou quaisquer expressões sem numeração podem ser digitadas dentro do
+texto, como já vimos com os símbolos $m$ e $c$ após a equação (\ref{eq:emc2}).
+Por exemplo, o trecho '`a lei de Ohm é $V=Ri$`' é tipografado como: a lei de Ohm
+é $V=Ri$. Além disso, símbolos tais como '$\sum$' e '$\int$' são tipografados no
+arquivo `.pdf` em tipos menores dentro do texto, e em tipos maiores quando se
+usa `\displaystyle`. No arquivo `.docx`, entretanto, `\displaystyle` não faz
+nenhum efeito (na verdade, Pandoc não o utiliza quando escreve o arquivo
+`.docx`).
+
+
+Compare:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+$S = \sum_{i=1}^\infty a_i$
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+*versus*
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+$\displaystyle S = \sum_{i=1}^\infty a_i$
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+que são tipografados como:
+
+$S = \sum_{i=1}^\infty a_{i}$
+
+*versus*
+
+$\displaystyle S = \sum_{i=1}^\infty a_{i}$
+
+
+
+Note que é possível destacar uma equação sem numerá-la, como foi feito na última
+linha acima.
+
+Da mesma maneira que com os arquivos `.bib` de referências bibliográficas, a
+sintaxe de LaTeX, que deve ser usada para formatar as expressões matemáticas, é
+*rígida*: chaves não fechadas, nomes de símbolos digitados incorretamente (por
+exemplo: '`\smu`' em lugar de '`\sum`'), etc., sempre conduzem a erro e em geral
+à impossibilidade de gerar novos `.pdf` e `.docx`. A sintaxe de expressões
+matemáticas em LaTeX é bem explicada em @lamport1994, e uma boa introdução a
+LaTeX como um todo, e à sintaxe de suas expressões matemáticas, pode ser
+encontrada em Português em
+<ftp://ctan.tug.org/ctan%3A/info/lshort/portuguese/pt-lshort.pdf>. Embora esteja
+além do nosso escopo ensinar toda a sintaxe de expressões matemáticas em LaTeX,
+damos na subseção \ref{subsec:maisexeq} mais alguns exemplos que podem ser
+úteis.
+
+
+Uma boa maneira de evitar erros de sintaxe é utilizar editores visuais de LaTeX,
+e copiar/colar as equações para o arquivo `.txt` depois que elas ficarem
+corretas. Dois bons editores são \textit{EqualX} (para Windows e Linux:
+<http://equalx.sourceforge.net/downloads.html>) e Daum (para Google Chrome:
+<https://chrome.google.com/webstore/search/daum?utm_source=chrome-ntp-icon>).
+
+## Mais exemplos de equações \label{subsec:maisexeq}
+
+
+Nosso primeiro exemplo envolve somas e frações: a soma de uma progressão
+geométrica é
+
+$\displaystyle \frac{1}{1-x} = \sum_{n=0}^\infty x^{n},
+\qquad |x| \le 1$,
+\elabel{eq:sumpg}\hfill(\ref{eq:sumpg})
+
+que foi produzida com:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+$\displaystyle \frac{1}{1-x} = \sum_{n=0}^\infty x^{n},
+\qquad |x| \le 1$,
+\elabel{eq:sumpg}\hfill(\ref{eq:sumpg})
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Nosso segundo exemplo envolve a integral definidora da função gama:
+
+$\displaystyle \Gamma(x) \equiv
+\int_{0}^{\infty} t^{x-1} e^{-t}\,dt,$
+\elabel{eq:fgamma}\hfill(\ref{eq:fgamma})
+
+a qual, por sua vez, foi produzida com 
+
+~~~~~~~~~~~~~~~
+$\displaystyle \Gamma(x) \equiv
+\int_{0}^{\infty} t^{x-1} e^{-t}\,dt,$
+\elabel{eq:fgamma}\hfill(\ref{eq:fgamma})
+~~~~~~~~~~~~~~~
+
+Vetores e matrizes são frequentemente necessários.  Por exemplo, a fórmula
+
+$\displaystyle\vec{V}^E =\vec{V}_0^E +
+\vec{\omega}^E_{bE} {\times} ({R}_{Eb} {\cdot}\vec{r}^{\,b})+
+{R}_{Eb} {\cdot} \vec{v}^{\,b}$,
+\elabel{eq:motion}\hfill(\ref{eq:motion})
+
+foi produzida com 
+
+~~~~~~~~~~~~~~~
+$\displaystyle\vec{V}^E =\vec{V}_0^E +
+\vec{\omega}^E_{bE} {\times} ({R}_{Eb} {\cdot}\vec{r}{\;}^{b})+
+{R}_{Eb} {\cdot} \vec{v}^b$,
+\elabel{eq:motion}\hfill(\ref{eq:motion})
+~~~~~~~~~~~~~~~
+
+Já a fórmula para matrizes
+
+$\displaystyle {R}_y=\left[
+\begin{array}{ccc}
+\cos\theta_y & 0 & -\sin\theta_y\\
+0 & 1 & 0\\
+\sin\theta_y & 0 & \cos\theta_y\\
+\end{array}
+\right]$\elabel{eq:Ry}\hfill(\ref{eq:Ry})
+ 
+foi produzida com
+
+~~~~~~~~~~~~~~~
+$\displaystyle {R}_y=\left[
+\begin{array}{ccc}
+\cos\theta_y & 0 & -\sin\theta_y\\
+0 & 1 & 0\\
+\sin\theta_y & 0 & \cos\theta_y\\
+\end{array}
+\right]$\elabel{eq:Ry}\hfill(\ref{eq:Ry})
+~~~~~~~~~~~~~~~
+
+
+
+Finalmente, temos a equação de Penman [@penman1948]:
+
+$\displaystyle LE=\frac{\Delta}{\Delta+\gamma}\left[R_n-D\right]+
+\frac{\gamma}{\Delta+\gamma}Lf(\overline{u})
+(\overline{e}_a^{*} - \overline{e}_a)$
+\elabel{eq:penman}\hfill(\ref{eq:penman})
+
+
+
+A equação (\ref{eq:penman}) foi feita com
+
+~~~~~~~~~~~~~~~
+$\displaystyle LE=\frac{\Delta}{\Delta+\gamma}\left[R_n-D\right]+
+\frac{\gamma}{\Delta+\gamma}Lf(\overline{u})
+(\overline{e}_a^{*} - \overline{e}_a)$
+\elabel{eq:penman}\hfill(\ref{eq:penman})
+~~~~~~~~~~~~~~~
+
+# Conclusões \label{sec:concl}
+
+Pandoc é um ferramenta extremamente útil para produzir documentos relativamente
+pequenos (da ordem de 20 páginas) que utilizam fortemente elementos textuais
+tais como referências bibliográficas, tabelas, figuras e equações, que precisam
+ser atualizados dinamicamente, e alguns deles renumerados, à medida que
+prossegue a sua redação. Manuscript acrescenta um elemento importante para autores,
+que são os pares de referências cruzadas '`\label`'/'`\ref`', cuja sintaxe é
+copiada de LaTeX.  LaTeX também é necessário para que o pré-processador Manuscript
+funcione.
+
+
+Para que o uso de Manuscript/Pandoc seja efetivo, é preciso uma certa
+auto-disciplina, deferindo-se formatações mais sofisticadas das próprias páginas
+para um estágio posterior à completa redação do documento. A recompensa é a
+geração de arquivos `.pdf` altamente legíveis (ainda que simples), e a geração
+*automática* de arquivos `.docx` formatados de maneira consistente, e também
+igualmente legíveis.
+
+Em nossa experiência, o uso sistemático de Manuscript/Pandoc aumenta a eficiência
+do processo de redação, que fica mais rápido e mais livre de erros, e diminui
+consideravelmente o peso da formatação manual de texto inerente ao uso de
+processadores de texto.
+
+
+# Referências  {.unnumbered}
+
